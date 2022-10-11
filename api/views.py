@@ -3,6 +3,7 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from .models import Advocate, AdvocateLink, Company
 from .serializers import AdvocateSerializer, AdvocateLinkSeriizer, CompanySerializer
+from .pagination import StandardResultsSetPagination
 
 
 @api_view(['GET'])
@@ -19,15 +20,21 @@ def home(request):
 
 @api_view(['GET'])
 def get_all_advocates(request):
-    advocates = Advocate.objects.all()
-    serializer = AdvocateSerializer(advocates, many=True)
-    return Response(serializer.data)
+    advocates = Advocate.objects.all() 
+    if 'query' in request.GET:
+        name = request.GET.get('query')
+        advocates = Advocate.objects.filter(name=name)
+    paginator = StandardResultsSetPagination()
+    result_page = paginator.paginate_queryset(advocates, request)
+    serializer = AdvocateSerializer(result_page, many=True)
+    return paginator.get_paginated_response(serializer.data)
 
 @api_view(['GET'])
 def get_advocate(request, id):
     adv = Advocate.objects.get(id=id)
     serializer = AdvocateSerializer(adv ,many=False)
     return Response(serializer.data)
+
 
 @api_view(['GET'])
 def get_all_companies(request):
